@@ -34,13 +34,12 @@
     mode: "0644"
   notify: restart kavita
 
-{% if not kavita_traefik_enabled %}
 - name: Create Docker network
   community.docker.docker_network:
     name: "{{ kavita_docker_network }}"
     driver: bridge
     state: present
-{% endif %}
+  when: not kavita_traefik_enabled
 
 - name: Check if Kavita containers are already running
   ansible.builtin.command:
