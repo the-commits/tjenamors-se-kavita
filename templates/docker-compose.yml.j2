@@ -1,0 +1,59 @@
+# {{ ansible_managed }}
+# Kavita - Docker Compose stack
+
+name: kavita
+
+services:
+  kavita:
+    container_name: kavita
+    image: "{{ kavita_image }}"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: "{{ kavita_memory_max }}"
+          cpus: "{{ kavita_cpus_max }}"
+        reservations:
+          memory: "{{ kavita_memory_reservation }}"
+          cpus: "{{ kavita_cpus_reservation }}"
+    environment:
+      - TZ={{ kavita_tz }}
+    volumes:
+      - "{{ kavita_base_dir }}/manga:/manga"
+      - "{{ kavita_base_dir }}/comics:/comics"
+      - "{{ kavita_base_dir }}/books:/books"
+      - "{{ kavita_base_dir }}/config:/kavita/config"
+{% if not kavita_traefik_enabled %}
+    ports:
+      - "{{ kavita_port }}:5000"
+{% endif %}
+{% if kavita_traefik_enabled %}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.kavita.rule=Host(`{{ kavita_traefik_domain }}`)"
+      - "traefik.http.routers.kavita.entrypoints=websecure"
+      - "traefik.http.routers.kavita.tls=true"
+      - "traefik.http.routers.kavita.tls.certResolver=letsencrypt"
+      - "traefik.http.services.kavita.loadbalancer.server.port=5000"
+{% endif %}
+    networks:
+{% if kavita_traefik_enabled %}
+      - default
+      - "{{ kavita_traefik_network }}"
+{% else %}
+      - "{{ kavita_docker_network }}"
+{% endif %}
+    logging:
+      options:
+        max-size: "1m"
+        max-file: "3"
+
+{% if kavita_traefik_enabled %}
+networks:
+  {{ kavita_traefik_network }}:
+    external: true
+{% else %}
+networks:
+  {{ kavita_docker_network }}:
+    driver: bridge
+{% endif %}

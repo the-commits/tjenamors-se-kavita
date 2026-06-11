@@ -1,0 +1,18 @@
+namespace: tjenamors
+name: kavita
+version: 0.0.1
+readme: README.md
+authors:
+  - the-commits
+description: An Ansible role to deploy Kavita via Docker Compose
+license:
+  - AGPL-3.0
+tags:
+  - docker
+  - docker_compose
+  - kavita
+dependencies:
+  docker: {}
+  docker_compose: {}
+repository: https://git.sr.ht/~the-commits/tjenamors-se-kavita
+issues: https://git.sr.ht/~the-commits/tjenamors-se-kavita

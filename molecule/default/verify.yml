@@ -1,0 +1,14 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Check compose file exists
+      ansible.builtin.stat:
+        path: "/opt/kavita/docker-compose.yml"
+      register: compose_file
+    - name: Assert compose file present
+      ansible.builtin.assert:
+        that: compose_file.stat.exists
+        msg: "docker-compose.yml not found"

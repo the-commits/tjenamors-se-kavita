@@ -1,0 +1,122 @@
+---
+- name: Include OS-specific variables
+  ansible.builtin.include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_os_family | lower }}.yml"
+    - "default.yml"
+
+- name: Build docker compose command
+  ansible.builtin.set_fact:
+    kavita_compose_cmd: >-
+      /usr/bin/docker compose -f {{ kavita_base_dir }}/docker-compose.yml
+      --project-directory {{ kavita_base_dir }}
+
+- name: Create Kavita directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ kavita_base_dir }}"
+    - "{{ kavita_base_dir }}/manga"
+    - "{{ kavita_base_dir }}/comics"
+    - "{{ kavita_base_dir }}/books"
+    - "{{ kavita_base_dir }}/config"
+
+- name: Deploy docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ kavita_base_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart kavita
+
+{% if not kavita_traefik_enabled %}
+- name: Create Docker network
+  community.docker.docker_network:
+    name: "{{ kavita_docker_network }}"
+    driver: bridge
+    state: present
+{% endif %}
+
+- name: Check if Kavita containers are already running
+  ansible.builtin.command:
+    cmd: "{{ kavita_compose_cmd }} ps --services --filter status=running"
+  args:
+    chdir: "{{ kavita_base_dir }}"
+  register: kavita_ps
+  changed_when: false
+  failed_when: false
+
+- name: Determine if Kavita needs first-run setup
+  ansible.builtin.set_fact:
+    kavita_needs_setup: "{{ kavita_ps.stdout_lines | length == 0 }}"
+
+- name: Pull Docker images
+  ansible.builtin.command:
+    cmd: "{{ kavita_compose_cmd }} pull"
+  args:
+    chdir: "{{ kavita_base_dir }}"
+  register: compose_pull
+  changed_when: compose_pull.stdout_lines | length > 0
+  when: kavita_needs_setup
+
+- name: Deploy systemd unit
+  when:
+    - ansible_facts['service_mgr'] == 'systemd'
+    - kavita_needs_setup
+  block:
+    - name: Deploy kavita.service unit
+      ansible.builtin.template:
+        src: kavita.service.j2
+        dest: /etc/systemd/system/kavita.service
+        owner: root
+        group: root
+        mode: "0644"
+      register: systemd_unit
+
+    - name: Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: true
+      when: systemd_unit.changed
+
+- name: Enable and start systemd service (one-time)
+  when:
+    - ansible_facts['service_mgr'] == 'systemd'
+    - kavita_needs_setup
+  block:
+    - name: Check if service is already enabled
+      ansible.builtin.command: systemctl is-enabled kavita
+      changed_when: false
+      failed_when: false
+      register: svc_enabled
+
+    - name: Enable service on first run
+      ansible.builtin.command: systemctl enable kavita
+      when: svc_enabled.rc != 0
+
+    - name: Check if service is already active
+      ansible.builtin.command: systemctl is-active kavita
+      changed_when: false
+      failed_when: false
+      register: svc_active
+
+    - name: Start service on first run
+      ansible.builtin.command: systemctl start kavita
+      when: svc_active.rc != 0
+
+- name: Start directly via docker compose (non-systemd)
+  when:
+    - ansible_facts['service_mgr'] != 'systemd'
+    - kavita_needs_setup
+  block:
+    - name: Start Kavita containers
+      ansible.builtin.command:
+        cmd: "{{ kavita_compose_cmd }} up -d"
+      args:
+        chdir: "{{ kavita_base_dir }}"
+      register: compose_up
+      changed_when: compose_up.stdout is not search('is up-to-date')

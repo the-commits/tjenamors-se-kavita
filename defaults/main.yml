@@ -1,0 +1,29 @@
+---
+kavita_base_dir: "/opt/kavita"
+kavita_image: "jvmilazz0/kavita:latest"
+kavita_container_name: "kavita"
+
+# Networks
+kavita_docker_network: "kavita"
+kavita_traefik_network: "traefik"
+
+# Port
+kavita_port: 5000
+
+# Timezone
+kavita_tz: "UTC"
+
+# Resource limits (Docker Compose deploy.resources)
+kavita_memory_max: "512m"
+kavita_memory_reservation: "256m"
+kavita_cpus_max: "1"
+kavita_cpus_reservation: "0.5"
+
+# Traefik integration
+kavita_traefik_enabled: false
+kavita_traefik_domain: "kavita.example.com"
+
+# Systemd
+kavita_shutdown_timeout: 30
+kavita_service_enabled: true
+kavita_service_state: started

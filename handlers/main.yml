@@ -1,0 +1,17 @@
+---
+- name: reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: restart kavita
+  ansible.builtin.systemd:
+    name: kavita
+    state: restarted
+  when: ansible_facts['service_mgr'] == 'systemd'
+
+- name: restart kavita compose
+  ansible.builtin.command:
+    cmd: "{{ kavita_compose_cmd }} restart"
+  args:
+    chdir: "{{ kavita_base_dir }}"
+  when: ansible_facts['service_mgr'] != 'systemd'

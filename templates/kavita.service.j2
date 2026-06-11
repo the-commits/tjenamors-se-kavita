@@ -1,0 +1,18 @@
+[Unit]
+Description=Kavita Docker Stack
+Wants=network-online.target
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory={{ kavita_base_dir }}
+ExecStart={{ kavita_compose_cmd }} up -d --remove-orphans
+ExecStop={{ kavita_compose_cmd }} down --timeout {{ kavita_shutdown_timeout }}
+ExecReload={{ kavita_compose_cmd }} restart
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

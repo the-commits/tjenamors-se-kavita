@@ -1,0 +1,15 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: true
+  vars:
+    kavita_base_dir: /opt/kavita
+  pre_tasks:
+    - name: Install Docker (for Docker Compose roles)
+      ansible.builtin.shell: |
+        curl -fsSL https://get.docker.com | sh
+      args:
+        creates: /usr/bin/docker
+  roles:
+    - role: kavita
