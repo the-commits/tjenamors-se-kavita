@@ -29,7 +29,7 @@ Add to your `requirements.yml`:
 ---
 roles:
   - name: kavita
-    src: git@git.sr.ht:the-commits/kavita
+    src: git@git.sr.ht:~the-commits/tjenamors-se-kavita
     scm: git
     version: main
 ```
@@ -49,11 +49,17 @@ All variables are prefixed with `kavita_`. See [`defaults/main.yml`](defaults/ma
 | `kavita_base_dir` | `/opt/kavita` | Installation directory |
 | `kavita_image` | `jvmilazz0/kavita:latest` | Docker image to use |
 | `kavita_container_name` | `kavita` | Container name |
-| `kavita_docker_network` | `kavita` | Docker network name |
+| `kavita_docker_network` | `kavita` | Internal Docker network name |
+| `kavita_traefik_network` | `traefik` | External Traefik network name |
+| `kavita_port` | `5000` | Container port |
+| `kavita_tz` | `UTC` | Container timezone |
 | `kavita_memory_max` | `512m` | Max memory for container |
 | `kavita_memory_reservation` | `256m` | Memory reservation |
 | `kavita_cpus_max` | `1` | Max CPU count |
 | `kavita_cpus_reservation` | `0.5` | CPU reservation |
+| `kavita_traefik_enabled` | `false` | Enable Traefik reverse proxy |
+| `kavita_traefik_domain` | `kavita.example.com` | Traefik domain |
+| `kavita_shutdown_timeout` | `30` | Systemd shutdown timeout |
 
 ## Dependencies
 
@@ -61,7 +67,24 @@ Requires Docker Engine and Docker Compose. See
 [`tjenamors-se-docker`](https://git.sr.ht/~the-commits/tjenamors-se-docker) and
 [`tjenamors-se-docker-compose`](https://git.sr.ht/~the-commits/tjenamors-se-docker-compose).
 
+Optionally requires [`tjenamors-se-traefik`](https://git.sr.ht/~the-commits/tjenamors-se-traefik)
+when `kavita_traefik_enabled` is `true`.
+
+## Traefik Integration
+
+When `kavita_traefik_enabled` is `true`, Kavita joins the shared Traefik Docker
+network and publishes Traefik labels for automatic routing. The container port
+is not exposed directly — all traffic goes through Traefik on port 443 with
+Let's Encrypt TLS.
+
+```yaml
+kavita_traefik_enabled: true
+kavita_traefik_domain: bibliotek.tjenamors.se
+```
+
 ## Example Playbook
+
+### Standalone (no Traefik)
 
 ```yaml
 - hosts: all
@@ -74,14 +97,30 @@ Requires Docker Engine and Docker Compose. See
     - role: kavita
 ```
 
+### Behind Traefik
+
+```yaml
+- hosts: all
+  become: true
+  vars:
+    kavita_traefik_enabled: true
+    kavita_traefik_domain: bibliotek.tjenamors.se
+    kavita_base_dir: /opt/kavita
+  roles:
+    - role: docker
+    - role: docker_compose
+    - role: traefik
+    - role: kavita
+```
+
 ## Resource Limits
 
 By default, containers are limited to 512 MB RAM and 1 vCPU.
 Adjust via role variables:
 
 ```yaml
-kavita_memory_max: 1024m
-kavita_cpus_max: "2"
+kavita_memory_max: 2048m
+kavita_cpus_max: "1"
 ```
 
 ## Service Management (systemd)
