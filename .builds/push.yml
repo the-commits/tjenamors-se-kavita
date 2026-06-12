@@ -3,7 +3,7 @@ image: alpine/edge
 packages:
   - git
 sources:
-  - https://git.sr.ht/~the-commits/tjenamors-se-kavita
+  - https://git.sr.ht:~the-commits/tjenamors-se-kavita
 secrets:
   - e3464eed-b716-485b-873c-a785ef7bf68b
 environment:
