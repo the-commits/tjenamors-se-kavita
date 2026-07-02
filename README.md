@@ -1,3 +1,6 @@
+[![sourcehut](https://img.shields.io/badge/sourcehut-~the--commits/tjenamors--se--kavita-2d6b9e?logo=sourcehut)](https://git.sr.ht/~the-commits/tjenamors-se-kavita)
+[![GitHub mirror](https://img.shields.io/badge/GitHub-the--commits/tjenamors--se--kavita-181717?logo=github)](https://github.com/the-commits/tjenamors-se-kavita)
+
 # Deploy Kavita eBook reader
 
 An Ansible role to deploy Kavita via Docker Compose
